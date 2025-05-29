@@ -21,6 +21,9 @@ const IPAddress subnet(255, 255, 255, 0);
 #define IN3 13  // Changed from 2 (available GPIO, was conflicting)
 #define IN4 12  // Changed from 4 (available GPIO, was conflicting with camera Y2)
 
+// LED/Light control pin
+#define LED_PIN 4  // Using GPIO 4 for LED control (now available)
+
 // Camera pin definitions for AI Thinker ESP32-CAM
 #define PWDN_GPIO_NUM 32
 #define RESET_GPIO_NUM -1
@@ -41,6 +44,9 @@ const IPAddress subnet(255, 255, 255, 0);
 
 WebServer server(80);
 httpd_handle_t camera_httpd = NULL;
+
+// LED state variable
+bool ledState = false;
 
 // Camera streaming handler
 static esp_err_t stream_handler(httpd_req_t *req) {
@@ -128,6 +134,10 @@ void setup() {
   pinMode(IN4, OUTPUT);
   stopMotors();
 
+  // LED pin setup
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);  // Start with LED off
+
   // Configure static IP
   if (!WiFi.config(local_IP, gateway, subnet)) {
     Serial.println("STA Failed to configure");
@@ -190,7 +200,7 @@ void setup() {
   if (s != NULL) {
     // Flip image vertically and horizontally if needed
     s->set_vflip(s, 1);        // Flip vertically
-    s->set_hmirror(s, 1);      // Mirror horizontally
+    s->set_hmirror(s, 0);      // Mirror horizontally
     
     // Adjust other settings for better streaming
     s->set_brightness(s, 0);   // -2 to 2
@@ -211,8 +221,6 @@ void setup() {
     s->set_wpc(s, 1);          // 0 = disable , 1 = enable
     s->set_raw_gma(s, 1);      // 0 = disable , 1 = enable
     s->set_lenc(s, 1);         // 0 = disable , 1 = enable
-    s->set_hmirror(s, 0);      // 0 = disable , 1 = enable (overridden above)
-    s->set_vflip(s, 0);        // 0 = disable , 1 = enable (overridden above)
     s->set_dcw(s, 1);          // 0 = disable , 1 = enable
     s->set_colorbar(s, 0);     // 0 = disable , 1 = enable
   }
@@ -223,6 +231,7 @@ void setup() {
   Serial.printf("  IN2 (Motor A-): GPIO %d\n", IN2);
   Serial.printf("  IN3 (Motor B+): GPIO %d\n", IN3);
   Serial.printf("  IN4 (Motor B-): GPIO %d\n", IN4);
+  Serial.printf("  LED Control: GPIO %d\n", LED_PIN);
 
   startCameraServer();
 }
@@ -261,6 +270,12 @@ void turnRight() {
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, HIGH);
+}
+
+// LED control function
+void toggleLED() {
+  ledState = !ledState;
+  digitalWrite(LED_PIN, ledState ? HIGH : LOW);
 }
 
 void handleRoot() {
@@ -342,8 +357,10 @@ void handleRoot() {
         
         .forward { grid-column: 2; grid-row: 1; }
         .left { grid-column: 1; grid-row: 2; }
-        .stop { grid-column: 2; grid-row: 2; background: linear-gradient(45deg, #f44336, #da190b); }
-        .stop:hover { background: linear-gradient(45deg, #da190b, #f44336); }
+        .light { grid-column: 2; grid-row: 2; background: linear-gradient(45deg, #FFC107, #FF8F00); }
+        .light:hover { background: linear-gradient(45deg, #FF8F00, #FFC107); }
+        .light.on { background: linear-gradient(45deg, #4CAF50, #45a049); }
+        .light.on:hover { background: linear-gradient(45deg, #45a049, #4CAF50); }
         .right { grid-column: 3; grid-row: 2; }
         .backward { grid-column: 2; grid-row: 3; }
         
@@ -399,8 +416,8 @@ void handleRoot() {
             ⬅️ Left
           </button>
           
-          <button class="stop" onclick="sendCommand('stop')">
-            🛑 Stop
+          <button class="light" id="lightBtn" onclick="toggleLight()">
+            💡 Light OFF
           </button>
           
           <button class="right" onmousedown="sendCommand('right')" onmouseup="sendCommand('stop')"
@@ -421,15 +438,18 @@ void handleRoot() {
           IN1 (Motor A+): GPIO 14<br>
           IN2 (Motor A-): GPIO 15<br>
           IN3 (Motor B+): GPIO 13<br>
-          IN4 (Motor B-): GPIO 12
+          IN4 (Motor B-): GPIO 12<br>
+          LED Control: GPIO 4
         </div>
       </div>
       
       <script>
         let isConnected = false;
+        let lightOn = false;
         const streamImg = document.getElementById('stream');
         const statusDiv = document.getElementById('status');
         const streamStatusDiv = document.getElementById('streamStatus');
+        const lightBtn = document.getElementById('lightBtn');
         
         // Initialize camera stream
         function initStream() {
@@ -449,6 +469,34 @@ void handleRoot() {
             // Retry connection
             setTimeout(initStream, 3000);
           };
+        }
+        
+        // Toggle light function
+        async function toggleLight() {
+          try {
+            const response = await fetch('/light');
+            if (response.ok) {
+              const text = await response.text();
+              lightOn = !lightOn;
+              
+              if (lightOn) {
+                lightBtn.textContent = '💡 Light ON';
+                lightBtn.classList.add('on');
+              } else {
+                lightBtn.textContent = '💡 Light OFF';
+                lightBtn.classList.remove('on');
+              }
+              
+              statusDiv.textContent = text;
+              statusDiv.style.color = '#4CAF50';
+            } else {
+              statusDiv.textContent = 'Light command failed';
+              statusDiv.style.color = '#f44336';
+            }
+          } catch (error) {
+            statusDiv.textContent = 'Connection error';
+            statusDiv.style.color = '#f44336';
+          }
         }
         
         // Send command to robot
@@ -530,6 +578,11 @@ void startCameraServer() {
   server.on("/right", []() {
     turnRight();
     server.send(200, "text/plain", "Turning Right");
+  });
+  server.on("/light", []() {
+    toggleLED();
+    String message = ledState ? "Light ON" : "Light OFF";
+    server.send(200, "text/plain", message);
   });
   server.on("/stop", []() {
     stopMotors();
