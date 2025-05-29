@@ -9,17 +9,17 @@
 #include <WebServer.h>
 
 // Replace with your network credentials
-const char* ssid = "SSID";                         // <== Replace with your network credentials
-const char* password = "PASSWORD";                  // <== Replace with your network credentials
+const char* ssid = "BASE_AP";                         // <== Replace with your network credentials
+const char* password = "edmangoodlife123456";                  // <== Replace with your network credentials
 const IPAddress local_IP(192, 168, 8, 200);
 const IPAddress gateway(192, 168, 8, 1);
 const IPAddress subnet(255, 255, 255, 0);
 
-// Motor pins
-#define IN1 12
-#define IN2 13
-#define IN3 14
-#define IN4 15
+// Motor pins - FIXED: Using available GPIO pins that don't conflict with camera
+#define IN1 14  // Changed from 12 (available GPIO)
+#define IN2 15  // Changed from 13 (available GPIO) 
+#define IN3 13  // Changed from 2 (available GPIO, was conflicting)
+#define IN4 12  // Changed from 4 (available GPIO, was conflicting with camera Y2)
 
 // Camera pin definitions for AI Thinker ESP32-CAM
 #define PWDN_GPIO_NUM 32
@@ -34,7 +34,7 @@ const IPAddress subnet(255, 255, 255, 0);
 #define Y5_GPIO_NUM 21
 #define Y4_GPIO_NUM 19
 #define Y3_GPIO_NUM 18
-#define Y2_GPIO_NUM 5
+#define Y2_GPIO_NUM 5   // This was conflicting with IN4 (GPIO 4)
 #define VSYNC_GPIO_NUM 25
 #define HREF_GPIO_NUM 23
 #define PCLK_GPIO_NUM 22
@@ -211,13 +211,18 @@ void setup() {
     s->set_wpc(s, 1);          // 0 = disable , 1 = enable
     s->set_raw_gma(s, 1);      // 0 = disable , 1 = enable
     s->set_lenc(s, 1);         // 0 = disable , 1 = enable
-    s->set_hmirror(s, 0);      // 0 = disable , 1 = enable
-    s->set_vflip(s, 0);        // 0 = disable , 1 = enable
+    s->set_hmirror(s, 0);      // 0 = disable , 1 = enable (overridden above)
+    s->set_vflip(s, 0);        // 0 = disable , 1 = enable (overridden above)
     s->set_dcw(s, 1);          // 0 = disable , 1 = enable
     s->set_colorbar(s, 0);     // 0 = disable , 1 = enable
   }
 
   Serial.println("Camera initialized successfully");
+  Serial.println("Motor pins assigned:");
+  Serial.printf("  IN1 (Motor A+): GPIO %d\n", IN1);
+  Serial.printf("  IN2 (Motor A-): GPIO %d\n", IN2);
+  Serial.printf("  IN3 (Motor B+): GPIO %d\n", IN3);
+  Serial.printf("  IN4 (Motor B-): GPIO %d\n", IN4);
 
   startCameraServer();
 }
@@ -356,10 +361,21 @@ void handleRoot() {
           color: #888;
         }
         
+        .pin-info {
+          margin-top: 20px;
+          padding: 10px;
+          background-color: #2a2a2a;
+          border-radius: 5px;
+          font-size: 12px;
+          color: #ccc;
+          text-align: left;
+        }
+        
         @media (max-width: 480px) {
           .container { padding: 10px; }
           button { padding: 12px 15px; font-size: 14px; }
           .controls { max-width: 250px; gap: 8px; }
+          .pin-info { font-size: 10px; }
         }
       </style>
     </head>
@@ -399,6 +415,14 @@ void handleRoot() {
         </div>
         
         <div class="status" id="status">Ready</div>
+        
+        <div class="pin-info">
+          <strong>Motor Pin Assignments (Fixed):</strong><br>
+          IN1 (Motor A+): GPIO 14<br>
+          IN2 (Motor A-): GPIO 15<br>
+          IN3 (Motor B+): GPIO 13<br>
+          IN4 (Motor B-): GPIO 12
+        </div>
       </div>
       
       <script>

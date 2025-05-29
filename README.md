@@ -6,7 +6,10 @@ L298N dual H-Bridge motor driver
 
 
 ```bash
-    sudo dmesg | grep ch341
+      groups $USER
+   sudo chmod 666 /dev/ttyUSB0
+   sudo dmesg | grep ttyUSB
+   dmesg | grep tty
 ```
 OR
 ```bash
@@ -40,8 +43,13 @@ A WiFi-controlled robot car with live camera streaming built using ESP32-CAM mod
 |---------------|-----------------|----------|
 | GPIO 12       | IN1             | Motor 1 Control |
 | GPIO 13       | IN2             | Motor 1 Control |
-| GPIO 14       | IN3             | Motor 2 Control |
-| GPIO 15       | IN4             | Motor 2 Control |
+| GPIO 2        | IN3             | Motor 2 Control |
+| GPIO 4        | IN4             | Motor 2 Control |
+
+#define IN1 12
+#define IN2 13
+#define IN3 2
+#define IN4 4
 
 ## Wiring Diagram
 
@@ -50,8 +58,8 @@ ESP32-CAM          L298N Motor Driver
 ---------          ------------------
 GPIO 12     -->    IN1
 GPIO 13     -->    IN2
-GPIO 14     -->    IN3
-GPIO 15     -->    IN4
+GPIO 2      -->    IN3
+GPIO 4      -->    IN4
 GND         -->    GND
 5V          -->    5V
 
