@@ -9,8 +9,8 @@
 #include <WebServer.h>
 
 // Replace with your network credentials
-const char* ssid = "BASE_AP";                         // <== Replace with your network credentials
-const char* password = "edmangoodlife123456";                  // <== Replace with your network credentials
+const char* ssid = "";                         // <== Replace with your network credentials
+const char* password = "";                  // <== Replace with your network credentials
 const IPAddress local_IP(192, 168, 8, 200);
 const IPAddress gateway(192, 168, 8, 1);
 const IPAddress subnet(255, 255, 255, 0);
