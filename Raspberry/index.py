@@ -33,12 +33,12 @@ HEARTBEAT_INTERVAL = 0.5  # Send heartbeat every 500ms
 
 # GPIO Pin Definitions (BCM numbering)
 MOTOR_PINS = {
-    'IN1': 23,   # Physical Pin 16 - Motor A Direction 1  
-    'IN2': 24,   # Physical Pin 18 - Motor A Direction 2
-    'IN3': 25,   # Physical Pin 22 - Motor B Direction 1
-    'IN4': 8,    # Physical Pin 24 - Motor B Direction 2
-    'ENA': 18,   # Physical Pin 12 - Motor A Enable (PWM)
-    'ENB': 12    # Physical Pin 32 - Motor B Enable (PWM)
+    'IN1': 23,   # Physical Pin 16
+    'IN2': 24,   # Physical Pin 18  
+    'IN3': 25,   # Physical Pin 22
+    'IN4': 16,   # Physical Pin 36 (CHANGED from GPIO 8)
+    'ENA': 18,   # Physical Pin 12
+    'ENB': 12    # Physical Pin 32
 }
 
 # Hardware watchdog pin (optional - connect to L298N enable)
